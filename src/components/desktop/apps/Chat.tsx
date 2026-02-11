@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import * as Sentry from '@sentry/nextjs'
 import { Send, Bot, User, Loader2, Wrench, Search, Globe, FileText, Terminal } from 'lucide-react'
+import * as Sentry from '@sentry/nextjs'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -91,6 +92,9 @@ export function Chat() {
     setIsLoading(true)
     setCurrentTool(null)
 
+    Sentry.logger.info('User sent chat message, conversation length: %d', [messages.length + 1])
+    Sentry.metrics.increment('chat.client.message_sent', 1)
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -155,6 +159,8 @@ export function Chat() {
                     : msg
                 ))
               } else if (parsed.type === 'tool_start') {
+                Sentry.logger.info('Tool execution started: %s', [parsed.tool])
+                Sentry.metrics.increment('chat.client.tool_execution', 1, { tags: { tool: parsed.tool } })
                 setCurrentTool({
                   name: parsed.tool,
                   status: 'running'
@@ -165,8 +171,11 @@ export function Chat() {
                   elapsed: parsed.elapsed
                 } : null)
               } else if (parsed.type === 'done') {
+                Sentry.logger.info('Chat response stream completed')
+                Sentry.metrics.increment('chat.client.response_received', 1)
                 setCurrentTool(null)
               } else if (parsed.type === 'error') {
+                Sentry.logger.error('Chat stream returned error: %s', [parsed.message])
                 streamingContent = 'Sorry, I encountered an error processing your request.'
                 setMessages(prev => prev.map(msg => 
                   msg.id === streamingMessageId 
