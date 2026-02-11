@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import * as Sentry from '@sentry/nextjs'
 import { POCProject } from './types'
 import { calculatePOCStats, getProgressColor } from './utils'
 import { CompanyLogo } from './CompanyLogo'
 import { useAuth } from './auth'
+import { NotificationPanel } from './NotificationPanel'
+import { useNotifications } from './notifications'
 import { MutualActionPlan } from './MutualActionPlan'
 import { POCByPhase } from './POCByPhase'
 import { SuccessCriteria } from './SuccessCriteria'
@@ -21,9 +23,61 @@ interface POCProjectDetailProps {
 
 export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetailProps) {
   const { user, logout } = useAuth()
+  const { addNotification } = useNotifications()
   const [activeTab, setActiveTab] = useState<TabType>('action-plan')
 
+  // Check for approaching deadlines and send warning notifications
+  useEffect(() => {
+    const now = new Date()
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+
+    // Check action plan items with approaching deadlines
+    project.actionPlan.forEach(item => {
+      if (item.status !== 'completed' && item.dueDate) {
+        const dueDate = new Date(item.dueDate)
+        const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+        // Create warning if due within 3 days and not already overdue
+        if (daysUntilDue > 0 && daysUntilDue <= 3) {
+          const warningKey = `warning-${project.id}-${item.id}-${daysUntilDue}`
+          const hasShownWarning = localStorage.getItem(warningKey)
+
+          if (!hasShownWarning) {
+            addNotification({
+              type: 'warning',
+              title: '⚠️ Deadline Approaching',
+              message: `"${item.action}" is due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}`,
+              projectId: project.id,
+              projectName: project.customerName
+            })
+            localStorage.setItem(warningKey, 'true')
+          }
+        }
+
+        // Create urgent warning if overdue
+        if (daysUntilDue < 0) {
+          const overdueKey = `overdue-${project.id}-${item.id}`
+          const hasShownOverdue = localStorage.getItem(overdueKey)
+
+          if (!hasShownOverdue) {
+            addNotification({
+              type: 'warning',
+              title: '🚨 Item Overdue',
+              message: `"${item.action}" is ${Math.abs(daysUntilDue)} day${Math.abs(daysUntilDue) > 1 ? 's' : ''} overdue`,
+              projectId: project.id,
+              projectName: project.customerName
+            })
+            localStorage.setItem(overdueKey, 'true')
+          }
+        }
+      }
+    })
+  }, [project, addNotification])
+
   const handleToggleActionItem = (id: string) => {
+    const oldStats = calculatePOCStats(project)
+    const item = project.actionPlan.find(i => i.id === id)
+
     const updatedProject = {
       ...project,
       actionPlan: project.actionPlan.map(item => {
@@ -38,10 +92,47 @@ export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetail
         return item
       })
     }
+
+    const newStats = calculatePOCStats(updatedProject)
+
+    // Create notification when action item is completed
+    if (item && item.status !== 'completed') {
+      addNotification({
+        type: item.milestone ? 'milestone' : 'success',
+        title: item.milestone ? '🎯 Milestone Completed!' : '✓ Action Item Completed',
+        message: `"${item.action}" has been marked as complete`,
+        projectId: project.id,
+        projectName: project.customerName
+      })
+    }
+
+    // Check for overall progress milestones
+    const oldCompletion = oldStats.overallCompletion
+    const newCompletion = newStats.overallCompletion
+    const milestones = [25, 50, 75, 100]
+
+    for (const milestone of milestones) {
+      if (oldCompletion < milestone && newCompletion >= milestone) {
+        addNotification({
+          type: milestone === 100 ? 'success' : 'milestone',
+          title: milestone === 100 ? '🎉 POC Complete!' : `🎯 ${milestone}% Complete!`,
+          message: milestone === 100
+            ? `Congratulations! ${project.customerName} POC is now complete!`
+            : `Great progress! ${project.customerName} POC is now ${milestone}% complete`,
+          projectId: project.id,
+          projectName: project.customerName
+        })
+      }
+    }
+
     onUpdate(updatedProject)
   }
 
   const handleTogglePhaseTask = (phaseId: string, taskId: string) => {
+    const oldStats = calculatePOCStats(project)
+    const phase = project.phases.find(p => p.id === phaseId)
+    const task = phase?.tasks.find(t => t.id === taskId)
+
     const updatedProject = {
       ...project,
       phases: project.phases.map(phase => {
@@ -64,10 +155,58 @@ export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetail
         return phase
       })
     }
+
+    const newStats = calculatePOCStats(updatedProject)
+
+    // Create notification when task is completed
+    if (task && task.status !== 'completed' && phase) {
+      addNotification({
+        type: 'success',
+        title: '✓ Task Completed',
+        message: `"${task.description}" in ${phase.name} has been completed`,
+        projectId: project.id,
+        projectName: project.customerName
+      })
+
+      // Check if entire phase is now complete
+      const updatedPhase = updatedProject.phases.find(p => p.id === phaseId)
+      if (updatedPhase && updatedPhase.tasks.every(t => t.status === 'completed')) {
+        addNotification({
+          type: 'milestone',
+          title: '🎯 Phase Complete!',
+          message: `${phase.name} is now 100% complete!`,
+          projectId: project.id,
+          projectName: project.customerName
+        })
+      }
+    }
+
+    // Check for overall progress milestones
+    const oldCompletion = oldStats.overallCompletion
+    const newCompletion = newStats.overallCompletion
+    const milestones = [25, 50, 75, 100]
+
+    for (const milestone of milestones) {
+      if (oldCompletion < milestone && newCompletion >= milestone) {
+        addNotification({
+          type: milestone === 100 ? 'success' : 'milestone',
+          title: milestone === 100 ? '🎉 POC Complete!' : `🎯 ${milestone}% Complete!`,
+          message: milestone === 100
+            ? `Congratulations! ${project.customerName} POC is now complete!`
+            : `Great progress! ${project.customerName} POC is now ${milestone}% complete`,
+          projectId: project.id,
+          projectName: project.customerName
+        })
+      }
+    }
+
     onUpdate(updatedProject)
   }
 
   const handleToggleCriterion = (id: string) => {
+    const oldStats = calculatePOCStats(project)
+    const criterion = project.successCriteria.find(c => c.id === id)
+
     const updatedProject = {
       ...project,
       successCriteria: project.successCriteria.map(criterion => {
@@ -82,6 +221,39 @@ export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetail
         return criterion
       })
     }
+
+    const newStats = calculatePOCStats(updatedProject)
+
+    // Create notification when criterion is completed
+    if (criterion && criterion.status !== 'completed') {
+      addNotification({
+        type: 'success',
+        title: '✓ Success Criterion Met',
+        message: `"${criterion.criterion}" has been validated`,
+        projectId: project.id,
+        projectName: project.customerName
+      })
+    }
+
+    // Check for overall progress milestones
+    const oldCompletion = oldStats.overallCompletion
+    const newCompletion = newStats.overallCompletion
+    const milestones = [25, 50, 75, 100]
+
+    for (const milestone of milestones) {
+      if (oldCompletion < milestone && newCompletion >= milestone) {
+        addNotification({
+          type: milestone === 100 ? 'success' : 'milestone',
+          title: milestone === 100 ? '🎉 POC Complete!' : `🎯 ${milestone}% Complete!`,
+          message: milestone === 100
+            ? `Congratulations! ${project.customerName} POC is now complete!`
+            : `Great progress! ${project.customerName} POC is now ${milestone}% complete`,
+          projectId: project.id,
+          projectName: project.customerName
+        })
+      }
+    }
+
     onUpdate(updatedProject)
   }
 
@@ -110,6 +282,9 @@ export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetail
             <h1 className="text-lg font-semibold text-[#e8e4f0]">{project.customerName}</h1>
             <p className="text-sm text-[#9086a3]">{project.projectName}</p>
           </div>
+
+          {/* Notifications */}
+          <NotificationPanel />
 
           {/* User Profile */}
           {user && (

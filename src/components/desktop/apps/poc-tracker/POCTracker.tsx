@@ -8,6 +8,7 @@ import { POCProjectDetail } from './POCProjectDetail'
 import { getAllMockProjects } from './mockProjects'
 import { AuthProvider, useAuth } from './auth'
 import { LoginScreen } from './LoginScreen'
+import { NotificationProvider } from './notifications'
 
 function POCTrackerContent() {
   const { user, isLoading: authLoading } = useAuth()
@@ -102,7 +103,9 @@ function POCTrackerContent() {
 export function POCTracker() {
   return (
     <AuthProvider>
-      <POCTrackerContent />
+      <NotificationProvider>
+        <POCTrackerContent />
+      </NotificationProvider>
     </AuthProvider>
   )
 }

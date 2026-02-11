@@ -3,6 +3,7 @@
 import { POCProject } from './types'
 import { POCProjectCard } from './POCProjectCard'
 import { useAuth } from './auth'
+import { NotificationPanel } from './NotificationPanel'
 import { Plus, TrendingUp, LogOut, User } from 'lucide-react'
 
 interface POCProjectListProps {
@@ -25,6 +26,9 @@ export function POCProjectList({ projects, onSelectProject, onNewProject }: POCP
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Notifications */}
+          <NotificationPanel />
+
           {/* User Profile */}
           {user && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1e1a2a] rounded-lg">
