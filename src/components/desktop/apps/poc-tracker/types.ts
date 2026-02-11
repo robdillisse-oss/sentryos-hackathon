@@ -1,13 +1,43 @@
-export interface Milestone {
+// Mutual Action Plan types
+export interface ActionPlanItem {
   id: string
-  title: string
-  description: string
-  completed: boolean
-  completedDate?: Date
   dueDate?: Date
-  assignee?: string
+  milestone: string
+  owner: string
+  status: 'completed' | 'in-progress' | 'not-started'
+  notes?: string
 }
 
+// POC by Phase types
+export interface PhaseTask {
+  id: string
+  task: string
+  resources: string
+  owner: string
+  targetDate?: Date
+  status: 'completed' | 'in-progress' | 'not-started'
+  notes: string
+}
+
+export interface Phase {
+  id: string
+  name: string
+  tasks: PhaseTask[]
+}
+
+// Success Criteria types
+export interface SuccessCriterion {
+  id: string
+  criteria: string
+  validation: string
+  category: string
+  priority: 'high' | 'medium' | 'low'
+  currentState: string
+  status: 'completed' | 'in-progress' | 'not-started'
+  notes: string
+}
+
+// Main POC Project
 export interface POCProject {
   id: string
   customerName: string
@@ -16,16 +46,23 @@ export interface POCProject {
   targetCompletionDate: Date
   sentryContact: string
   customerContact: string
-  milestones: Milestone[]
+  sentryTeam: Array<{ name: string; role: string }>
+  customerTeam: Array<{ name: string; role: string }>
   status: 'not-started' | 'in-progress' | 'completed' | 'blocked'
+  actionPlan: ActionPlanItem[]
+  phases: Phase[]
+  successCriteria: SuccessCriterion[]
   notes?: string
 }
 
 export interface POCStats {
-  totalMilestones: number
-  completedMilestones: number
-  completionPercentage: number
-  overdueMilestones: number
+  totalActionItems: number
+  completedActionItems: number
+  totalTasks: number
+  completedTasks: number
+  totalCriteria: number
+  completedCriteria: number
+  overallCompletion: number
   daysRemaining: number
   onTrack: boolean
 }

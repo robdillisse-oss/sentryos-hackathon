@@ -3,335 +3,255 @@
 import { useState, useEffect } from 'react'
 import * as Sentry from '@sentry/nextjs'
 import { POCProject } from './types'
-import { POCCard } from './POCCard'
-import { POCForm } from './POCForm'
-import { Plus, Filter, TrendingUp, CheckCircle, AlertCircle } from 'lucide-react'
+import { calculatePOCStats, getProgressColor } from './utils'
+import { MutualActionPlan } from './MutualActionPlan'
+import { POCByPhase } from './POCByPhase'
+import { SuccessCriteria } from './SuccessCriteria'
+import { parseCatawikiExcel } from './excelParser'
+import { TrendingUp, CheckCircle, AlertCircle, Clock, ListTodo, Layers, Target } from 'lucide-react'
 
-// Sample POC data for demo
-const SAMPLE_POCS: POCProject[] = [
-  {
-    id: '1',
-    customerName: 'Acme Corporation',
-    projectName: 'Performance Monitoring POC',
-    startDate: new Date('2026-02-01'),
-    targetCompletionDate: new Date('2026-03-15'),
-    sentryContact: 'john.doe@sentry.io',
-    customerContact: 'jane.smith@acme.com',
-    status: 'in-progress',
-    milestones: [
-      {
-        id: 'm1',
-        title: 'Initial SDK Installation',
-        description: 'Install and configure Sentry SDK in production',
-        completed: true,
-        completedDate: new Date('2026-02-05')
-      },
-      {
-        id: 'm2',
-        title: 'Configure Performance Monitoring',
-        description: 'Set up transaction tracing and custom spans',
-        completed: true,
-        completedDate: new Date('2026-02-10')
-      },
-      {
-        id: 'm3',
-        title: 'Integrate with CI/CD',
-        description: 'Add release tracking and deploy notifications',
-        completed: false,
-        dueDate: new Date('2026-02-20')
-      },
-      {
-        id: 'm4',
-        title: 'Team Training Session',
-        description: 'Train engineering team on Sentry features',
-        completed: false,
-        dueDate: new Date('2026-03-01')
-      },
-      {
-        id: 'm5',
-        title: 'Final Review & Decision',
-        description: 'Executive review and purchase decision',
-        completed: false,
-        dueDate: new Date('2026-03-15')
-      }
-    ],
-    notes: 'High priority customer, enterprise plan expected'
-  },
-  {
-    id: '2',
-    customerName: 'TechStart Inc',
-    projectName: 'Error Tracking & Alerting',
-    startDate: new Date('2026-01-15'),
-    targetCompletionDate: new Date('2026-02-28'),
-    sentryContact: 'sarah.wilson@sentry.io',
-    customerContact: 'mike.chen@techstart.com',
-    status: 'in-progress',
-    milestones: [
-      {
-        id: 'm6',
-        title: 'SDK Setup',
-        description: 'Install Sentry in React and Node.js apps',
-        completed: true,
-        completedDate: new Date('2026-01-18')
-      },
-      {
-        id: 'm7',
-        title: 'Alert Configuration',
-        description: 'Set up email and Slack notifications',
-        completed: true,
-        completedDate: new Date('2026-01-25')
-      },
-      {
-        id: 'm8',
-        title: 'Source Map Upload',
-        description: 'Configure automated source map uploads',
-        completed: false,
-        dueDate: new Date('2026-02-15')
-      },
-      {
-        id: 'm9',
-        title: 'Issue Workflow Integration',
-        description: 'Connect with Jira for issue tracking',
-        completed: false,
-        dueDate: new Date('2026-02-25')
-      }
-    ]
-  }
-]
+type TabType = 'action-plan' | 'phases' | 'success-criteria'
 
 export function POCTracker() {
-  const [projects, setProjects] = useState<POCProject[]>([])
-  const [showForm, setShowForm] = useState(false)
-  const [editingProject, setEditingProject] = useState<POCProject | undefined>()
-  const [filter, setFilter] = useState<'all' | 'in-progress' | 'completed' | 'blocked'>('all')
+  const [project, setProject] = useState<POCProject | null>(null)
+  const [activeTab, setActiveTab] = useState<TabType>('action-plan')
 
-  // Load projects from localStorage on mount
+  // Load project data on mount
   useEffect(() => {
     Sentry.logger.info('POC Tracker loaded')
     Sentry.metrics.count('poc_tracker.page_load', 1)
 
-    const saved = localStorage.getItem('sentry-poc-projects')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        // Convert date strings back to Date objects
-        const hydrated = parsed.map((p: POCProject) => ({
-          ...p,
-          startDate: new Date(p.startDate),
-          targetCompletionDate: new Date(p.targetCompletionDate),
-          milestones: p.milestones.map(m => ({
-            ...m,
-            completedDate: m.completedDate ? new Date(m.completedDate) : undefined,
-            dueDate: m.dueDate ? new Date(m.dueDate) : undefined
-          }))
-        }))
-        setProjects(hydrated)
-        Sentry.logger.info('Loaded POC projects from storage', { count: hydrated.length })
-      } catch (error) {
-        Sentry.logger.error('Failed to load POC projects', {
-          error: error instanceof Error ? error.message : String(error)
-        })
-        setProjects(SAMPLE_POCS)
-      }
-    } else {
-      // First time - load sample data
-      setProjects(SAMPLE_POCS)
-      localStorage.setItem('sentry-poc-projects', JSON.stringify(SAMPLE_POCS))
-    }
+    // Load Catawiki POC data
+    const catawikiPOC = parseCatawikiExcel()
+    setProject(catawikiPOC)
+
+    Sentry.logger.info('Loaded Catawiki POC project', {
+      customer: catawikiPOC.customerName,
+      project_name: catawikiPOC.projectName
+    })
   }, [])
 
-  // Save projects to localStorage whenever they change
-  useEffect(() => {
-    if (projects.length > 0) {
-      localStorage.setItem('sentry-poc-projects', JSON.stringify(projects))
-    }
-  }, [projects])
+  const handleToggleActionItem = (id: string) => {
+    if (!project) return
 
-  const handleSaveProject = (project: POCProject) => {
-    const isNew = !projects.find(p => p.id === project.id)
-
-    if (isNew) {
-      Sentry.logger.info('New POC project created', {
-        customer: project.customerName,
-        project_name: project.projectName
-      })
-      Sentry.metrics.count('poc_tracker.project_created', 1)
-      setProjects([...projects, project])
-    } else {
-      Sentry.logger.info('POC project updated', {
-        project_id: project.id,
-        customer: project.customerName
-      })
-      Sentry.metrics.count('poc_tracker.project_updated', 1)
-      setProjects(projects.map(p => p.id === project.id ? project : p))
-    }
-
-    setShowForm(false)
-    setEditingProject(undefined)
-  }
-
-  const handleToggleMilestone = (projectId: string, milestoneId: string) => {
-    setProjects(projects.map(project => {
-      if (project.id !== projectId) return project
-
-      const milestones = project.milestones.map(milestone => {
-        if (milestone.id !== milestoneId) return milestone
-
-        const newCompleted = !milestone.completed
-        Sentry.logger.info('Milestone toggled', {
-          project_id: projectId,
-          milestone_id: milestoneId,
-          completed: newCompleted
-        })
-        Sentry.metrics.count('poc_tracker.milestone_toggled', 1, {
-          attributes: { completed: newCompleted.toString() }
-        })
-
-        return {
-          ...milestone,
-          completed: newCompleted,
-          completedDate: newCompleted ? new Date() : undefined
+    setProject({
+      ...project,
+      actionPlan: project.actionPlan.map(item => {
+        if (item.id === id) {
+          const newStatus = item.status === 'completed' ? 'in-progress' : 'completed'
+          Sentry.logger.info('Action item toggled', {
+            item_id: id,
+            status: newStatus
+          })
+          Sentry.metrics.count('poc_tracker.action_item_toggled', 1, {
+            attributes: { completed: (newStatus === 'completed').toString() }
+          })
+          return { ...item, status: newStatus }
         }
+        return item
       })
-
-      return { ...project, milestones }
-    }))
+    })
   }
 
-  const handleEdit = (project: POCProject) => {
-    Sentry.logger.info('Editing POC project', { project_id: project.id })
-    setEditingProject(project)
-    setShowForm(true)
+  const handleTogglePhaseTask = (phaseId: string, taskId: string) => {
+    if (!project) return
+
+    setProject({
+      ...project,
+      phases: project.phases.map(phase => {
+        if (phase.id === phaseId) {
+          return {
+            ...phase,
+            tasks: phase.tasks.map(task => {
+              if (task.id === taskId) {
+                const newStatus = task.status === 'completed' ? 'in-progress' : 'completed'
+                Sentry.logger.info('Phase task toggled', {
+                  phase_id: phaseId,
+                  task_id: taskId,
+                  status: newStatus
+                })
+                Sentry.metrics.count('poc_tracker.phase_task_toggled', 1, {
+                  attributes: { completed: (newStatus === 'completed').toString() }
+                })
+                return { ...task, status: newStatus }
+              }
+              return task
+            })
+          }
+        }
+        return phase
+      })
+    })
   }
 
-  const handleNewPOC = () => {
-    Sentry.logger.info('Creating new POC project')
-    setEditingProject(undefined)
-    setShowForm(true)
+  const handleToggleCriterion = (id: string) => {
+    if (!project) return
+
+    setProject({
+      ...project,
+      successCriteria: project.successCriteria.map(criterion => {
+        if (criterion.id === id) {
+          const newStatus = criterion.status === 'completed' ? 'in-progress' : 'completed'
+          Sentry.logger.info('Success criterion toggled', {
+            criterion_id: id,
+            status: newStatus
+          })
+          Sentry.metrics.count('poc_tracker.success_criterion_toggled', 1, {
+            attributes: { completed: (newStatus === 'completed').toString() }
+          })
+          return { ...criterion, status: newStatus }
+        }
+        return criterion
+      })
+    })
   }
 
-  const filteredProjects = filter === 'all'
-    ? projects
-    : projects.filter(p => p.status === filter)
-
-  const stats = {
-    total: projects.length,
-    inProgress: projects.filter(p => p.status === 'in-progress').length,
-    completed: projects.filter(p => p.status === 'completed').length,
-    blocked: projects.filter(p => p.status === 'blocked').length
+  if (!project) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#1e1a2a]">
+        <div className="text-center">
+          <TrendingUp className="w-12 h-12 text-[#7553ff] mx-auto mb-4 animate-pulse" />
+          <p className="text-sm text-[#9086a3]">Loading POC data...</p>
+        </div>
+      </div>
+    )
   }
+
+  const stats = calculatePOCStats(project)
 
   return (
     <div className="h-full flex flex-col bg-[#1e1a2a]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#362552] bg-[#2a2438]">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-[#7553ff]" />
-          <h1 className="text-lg font-semibold text-[#e8e4f0]">POC Tracker</h1>
+      <div className="px-4 py-3 border-b border-[#362552] bg-[#2a2438]">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-lg font-semibold text-[#e8e4f0]">{project.customerName}</h1>
+            <p className="text-sm text-[#9086a3]">{project.projectName}</p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-[#e8e4f0]">{stats.overallCompletion}%</div>
+            <div className={`text-xs ${stats.onTrack ? 'text-green-400' : 'text-red-400'}`}>
+              {stats.onTrack ? '✓ On Track' : '⚠ Behind Schedule'}
+            </div>
+          </div>
         </div>
+
+        {/* Progress Bar */}
+        <div className="w-full bg-[#1e1a2a] rounded-full h-2 mb-2">
+          <div
+            className={`h-full rounded-full transition-all ${getProgressColor(stats.overallCompletion, stats.onTrack)}`}
+            style={{ width: `${stats.overallCompletion}%` }}
+          />
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-4 gap-2 text-xs">
+          <div className="bg-[#1e1a2a] rounded px-2 py-1">
+            <div className="text-[#9086a3]">Action Plan</div>
+            <div className="text-[#e8e4f0] font-semibold">
+              {stats.completedActionItems}/{stats.totalActionItems}
+            </div>
+          </div>
+          <div className="bg-[#1e1a2a] rounded px-2 py-1">
+            <div className="text-[#9086a3]">Phase Tasks</div>
+            <div className="text-[#e8e4f0] font-semibold">
+              {stats.completedTasks}/{stats.totalTasks}
+            </div>
+          </div>
+          <div className="bg-[#1e1a2a] rounded px-2 py-1">
+            <div className="text-[#9086a3]">Success Criteria</div>
+            <div className="text-[#e8e4f0] font-semibold">
+              {stats.completedCriteria}/{stats.totalCriteria}
+            </div>
+          </div>
+          <div className="bg-[#1e1a2a] rounded px-2 py-1">
+            <div className="text-[#9086a3]">Days Left</div>
+            <div className={`font-semibold ${stats.daysRemaining < 7 ? 'text-red-400' : 'text-[#e8e4f0]'}`}>
+              {stats.daysRemaining > 0 ? stats.daysRemaining : 'Overdue'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-[#362552] bg-[#2a2438]">
         <button
-          onClick={handleNewPOC}
-          className="flex items-center gap-2 px-3 py-1.5 bg-[#7553ff] hover:bg-[#8c6fff] text-white text-sm rounded transition-colors"
+          onClick={() => {
+            setActiveTab('action-plan')
+            Sentry.logger.info('Switched to Action Plan tab')
+            Sentry.metrics.count('poc_tracker.tab_switched', 1, { attributes: { tab: 'action-plan' } })
+          }}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+            activeTab === 'action-plan'
+              ? 'text-[#7553ff] border-[#7553ff]'
+              : 'text-[#9086a3] border-transparent hover:text-[#e8e4f0]'
+          }`}
         >
-          <Plus className="w-4 h-4" />
-          New POC
+          <ListTodo className="w-4 h-4" />
+          Mutual Action Plan
+          <span className="text-xs bg-[#1e1a2a] px-1.5 py-0.5 rounded">
+            {stats.completedActionItems}/{stats.totalActionItems}
+          </span>
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('phases')
+            Sentry.logger.info('Switched to Phases tab')
+            Sentry.metrics.count('poc_tracker.tab_switched', 1, { attributes: { tab: 'phases' } })
+          }}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+            activeTab === 'phases'
+              ? 'text-[#7553ff] border-[#7553ff]'
+              : 'text-[#9086a3] border-transparent hover:text-[#e8e4f0]'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          POC by Phase
+          <span className="text-xs bg-[#1e1a2a] px-1.5 py-0.5 rounded">
+            {stats.completedTasks}/{stats.totalTasks}
+          </span>
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('success-criteria')
+            Sentry.logger.info('Switched to Success Criteria tab')
+            Sentry.metrics.count('poc_tracker.tab_switched', 1, { attributes: { tab: 'success-criteria' } })
+          }}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+            activeTab === 'success-criteria'
+              ? 'text-[#7553ff] border-[#7553ff]'
+              : 'text-[#9086a3] border-transparent hover:text-[#e8e4f0]'
+          }`}
+        >
+          <Target className="w-4 h-4" />
+          Success Criteria
+          <span className="text-xs bg-[#1e1a2a] px-1.5 py-0.5 rounded">
+            {stats.completedCriteria}/{stats.totalCriteria}
+          </span>
         </button>
       </div>
 
-      {/* Stats Bar */}
-      <div className="grid grid-cols-4 gap-3 p-4 border-b border-[#362552]">
-        <div className="bg-[#2a2438] rounded p-3">
-          <p className="text-xs text-[#9086a3] mb-1">Total POCs</p>
-          <p className="text-2xl font-bold text-[#e8e4f0]">{stats.total}</p>
-        </div>
-        <div className="bg-[#2a2438] rounded p-3">
-          <div className="flex items-center gap-1.5 text-xs text-[#9086a3] mb-1">
-            <div className="w-2 h-2 rounded-full bg-blue-500" />
-            <span>In Progress</span>
-          </div>
-          <p className="text-2xl font-bold text-[#e8e4f0]">{stats.inProgress}</p>
-        </div>
-        <div className="bg-[#2a2438] rounded p-3">
-          <div className="flex items-center gap-1.5 text-xs text-[#9086a3] mb-1">
-            <CheckCircle className="w-3 h-3 text-green-400" />
-            <span>Completed</span>
-          </div>
-          <p className="text-2xl font-bold text-green-400">{stats.completed}</p>
-        </div>
-        <div className="bg-[#2a2438] rounded p-3">
-          <div className="flex items-center gap-1.5 text-xs text-[#9086a3] mb-1">
-            <AlertCircle className="w-3 h-3 text-red-400" />
-            <span>Blocked</span>
-          </div>
-          <p className="text-2xl font-bold text-red-400">{stats.blocked}</p>
-        </div>
-      </div>
-
-      {/* Filter Bar */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#362552]">
-        <Filter className="w-4 h-4 text-[#9086a3]" />
-        <span className="text-sm text-[#9086a3]">Filter:</span>
-        {(['all', 'in-progress', 'completed', 'blocked'] as const).map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            className={`px-3 py-1 text-xs rounded transition-colors ${
-              filter === status
-                ? 'bg-[#7553ff] text-white'
-                : 'bg-[#2a2438] text-[#9086a3] hover:bg-[#362552]'
-            }`}
-          >
-            {status.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-          </button>
-        ))}
-      </div>
-
-      {/* POC List */}
-      <div className="flex-1 overflow-auto p-4">
-        {filteredProjects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <TrendingUp className="w-16 h-16 text-[#362552] mb-4" />
-            <h3 className="text-lg font-semibold text-[#e8e4f0] mb-2">No POCs Found</h3>
-            <p className="text-sm text-[#9086a3] mb-4">
-              {filter === 'all'
-                ? 'Get started by creating your first POC project'
-                : `No POCs with status "${filter}"`}
-            </p>
-            {filter === 'all' && (
-              <button
-                onClick={handleNewPOC}
-                className="flex items-center gap-2 px-4 py-2 bg-[#7553ff] hover:bg-[#8c6fff] text-white text-sm rounded transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Create First POC
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {filteredProjects.map((project) => (
-              <POCCard
-                key={project.id}
-                project={project}
-                onEdit={handleEdit}
-                onToggleMilestone={handleToggleMilestone}
-              />
-            ))}
-          </div>
+      {/* Tab Content */}
+      <div className="flex-1 overflow-auto">
+        {activeTab === 'action-plan' && (
+          <MutualActionPlan
+            items={project.actionPlan}
+            onToggleStatus={handleToggleActionItem}
+          />
+        )}
+        {activeTab === 'phases' && (
+          <POCByPhase
+            phases={project.phases}
+            onToggleTask={handleTogglePhaseTask}
+          />
+        )}
+        {activeTab === 'success-criteria' && (
+          <SuccessCriteria
+            criteria={project.successCriteria}
+            onToggleStatus={handleToggleCriterion}
+          />
         )}
       </div>
-
-      {/* Form Modal */}
-      {showForm && (
-        <POCForm
-          project={editingProject}
-          onSave={handleSaveProject}
-          onClose={() => {
-            setShowForm(false)
-            setEditingProject(undefined)
-          }}
-        />
-      )}
     </div>
   )
 }
