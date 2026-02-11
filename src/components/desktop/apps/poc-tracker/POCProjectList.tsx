@@ -1,10 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { POCProject } from './types'
 import { POCProjectCard } from './POCProjectCard'
 import { useAuth } from './auth'
 import { NotificationPanel } from './NotificationPanel'
-import { Plus, TrendingUp, LogOut, User } from 'lucide-react'
+import { ReportSettingsDialog } from './ReportSettingsDialog'
+import { Plus, TrendingUp, LogOut, User, Settings } from 'lucide-react'
 
 interface POCProjectListProps {
   projects: POCProject[]
@@ -14,6 +16,7 @@ interface POCProjectListProps {
 
 export function POCProjectList({ projects, onSelectProject, onNewProject }: POCProjectListProps) {
   const { user, logout } = useAuth()
+  const [reportSettingsOpen, setReportSettingsOpen] = useState(false)
 
   return (
     <div className="h-full flex flex-col bg-[#1e1a2a]">
@@ -26,6 +29,15 @@ export function POCProjectList({ projects, onSelectProject, onNewProject }: POCP
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Report Settings */}
+          <button
+            onClick={() => setReportSettingsOpen(true)}
+            className="flex items-center justify-center w-8 h-8 hover:bg-[#362552] text-[#9086a3] hover:text-[#e8e4f0] rounded transition-colors"
+            title="Report Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
           {/* Notifications */}
           <NotificationPanel />
 
@@ -96,6 +108,12 @@ export function POCProjectList({ projects, onSelectProject, onNewProject }: POCP
           </div>
         )}
       </div>
+
+      {/* Report Settings Dialog */}
+      <ReportSettingsDialog
+        open={reportSettingsOpen}
+        onOpenChange={setReportSettingsOpen}
+      />
     </div>
   )
 }

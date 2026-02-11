@@ -9,6 +9,7 @@ import { getAllMockProjects } from './mockProjects'
 import { AuthProvider, useAuth } from './auth'
 import { LoginScreen } from './LoginScreen'
 import { NotificationProvider } from './notifications'
+import { ReportPreferencesProvider } from './reportPreferences'
 
 function POCTrackerContent() {
   const { user, isLoading: authLoading } = useAuth()
@@ -80,23 +81,22 @@ function POCTrackerContent() {
     setSelectedProject(updatedProject)
   }
 
-  // Show detail view if a project is selected
-  if (selectedProject) {
-    return (
-      <POCProjectDetail
-        project={selectedProject}
-        onBack={handleBackToList}
-        onUpdate={handleUpdateProject}
-      />
-    )
-  }
-
-  // Show list view
+  // Wrap content with ReportPreferencesProvider to provide projects context
   return (
-    <POCProjectList
-      projects={projects}
-      onSelectProject={handleSelectProject}
-    />
+    <ReportPreferencesProvider projects={projects}>
+      {selectedProject ? (
+        <POCProjectDetail
+          project={selectedProject}
+          onBack={handleBackToList}
+          onUpdate={handleUpdateProject}
+        />
+      ) : (
+        <POCProjectList
+          projects={projects}
+          onSelectProject={handleSelectProject}
+        />
+      )}
+    </ReportPreferencesProvider>
   )
 }
 

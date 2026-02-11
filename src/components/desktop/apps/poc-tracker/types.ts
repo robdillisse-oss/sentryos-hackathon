@@ -83,3 +83,36 @@ export interface POCStats {
   daysRemaining: number
   onTrack: boolean
 }
+
+// Status Report types
+export interface ReportPreferences {
+  emailAddresses: string[]
+  includeAllProjects: boolean
+  selectedProjectIds: string[]
+  enabled: boolean
+}
+
+export interface ReportDeadline {
+  itemName: string
+  dueDate: Date
+  owner: string
+  type: 'action-item' | 'phase-task'
+}
+
+export interface ProjectReportData {
+  id: string
+  customerName: string
+  projectName: string
+  stats: POCStats
+  upcomingDeadlines: ReportDeadline[]
+  recentActivity: string[]
+}
+
+export interface ReportData {
+  generatedAt: Date
+  totalProjects: number
+  overallCompletion: number
+  projectsOnTrack: number
+  projectsBehind: number
+  projects: ProjectReportData[]
+}

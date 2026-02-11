@@ -7,12 +7,13 @@ import { calculatePOCStats, getProgressColor } from './utils'
 import { CompanyLogo } from './CompanyLogo'
 import { useAuth } from './auth'
 import { NotificationPanel } from './NotificationPanel'
+import { ReportSettingsDialog } from './ReportSettingsDialog'
 import { useNotifications } from './notifications'
 import { MutualActionPlan } from './MutualActionPlan'
 import { POCByPhase } from './POCByPhase'
 import { SuccessCriteria } from './SuccessCriteria'
 import { BusinessTimeline } from './BusinessTimeline'
-import { ArrowLeft, ListTodo, Layers, Target, LogOut, User } from 'lucide-react'
+import { ArrowLeft, ListTodo, Layers, Target, LogOut, User, Settings } from 'lucide-react'
 
 type TabType = 'action-plan' | 'phases' | 'success-criteria'
 
@@ -26,6 +27,7 @@ export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetail
   const { user, logout } = useAuth()
   const { addNotification } = useNotifications()
   const [activeTab, setActiveTab] = useState<TabType>('action-plan')
+  const [reportSettingsOpen, setReportSettingsOpen] = useState(false)
 
   // Check for approaching deadlines and send warning notifications
   useEffect(() => {
@@ -340,6 +342,15 @@ export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetail
             <p className="text-sm text-[#9086a3]">{project.projectName}</p>
           </div>
 
+          {/* Report Settings */}
+          <button
+            onClick={() => setReportSettingsOpen(true)}
+            className="flex items-center justify-center w-8 h-8 hover:bg-[#1e1a2a] text-[#9086a3] hover:text-[#e8e4f0] rounded transition-colors"
+            title="Report Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
           {/* Notifications */}
           <NotificationPanel />
 
@@ -504,6 +515,12 @@ export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetail
           </div>
         </div>
       </div>
+
+      {/* Report Settings Dialog */}
+      <ReportSettingsDialog
+        open={reportSettingsOpen}
+        onOpenChange={setReportSettingsOpen}
+      />
     </div>
   )
 }
