@@ -2,7 +2,8 @@
 
 import { POCProject } from './types'
 import { POCProjectCard } from './POCProjectCard'
-import { Plus, TrendingUp } from 'lucide-react'
+import { useAuth } from './auth'
+import { Plus, TrendingUp, LogOut, User } from 'lucide-react'
 
 interface POCProjectListProps {
   projects: POCProject[]
@@ -11,6 +12,8 @@ interface POCProjectListProps {
 }
 
 export function POCProjectList({ projects, onSelectProject, onNewProject }: POCProjectListProps) {
+  const { user, logout } = useAuth()
+
   return (
     <div className="h-full flex flex-col bg-[#1e1a2a]">
       {/* Header */}
@@ -20,15 +23,42 @@ export function POCProjectList({ projects, onSelectProject, onNewProject }: POCP
           <h1 className="text-lg font-semibold text-[#e8e4f0]">POC Tracker</h1>
           <span className="text-sm text-[#9086a3]">({projects.length} projects)</span>
         </div>
-        {onNewProject && (
+
+        <div className="flex items-center gap-3">
+          {/* User Profile */}
+          {user && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1e1a2a] rounded-lg">
+              <div className="w-6 h-6 rounded-full bg-[#7553ff]/20 flex items-center justify-center overflow-hidden">
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-3.5 h-3.5 text-[#7553ff]" />
+                )}
+              </div>
+              <span className="text-sm text-[#e8e4f0]">{user.name}</span>
+            </div>
+          )}
+
+          {/* Logout Button */}
           <button
-            onClick={onNewProject}
-            className="flex items-center gap-2 px-3 py-1.5 bg-[#7553ff] hover:bg-[#8c6fff] text-white text-sm rounded transition-colors"
+            onClick={logout}
+            className="flex items-center gap-2 px-3 py-1.5 hover:bg-[#362552] text-[#9086a3] hover:text-[#e8e4f0] text-sm rounded transition-colors"
+            title="Sign out"
           >
-            <Plus className="w-4 h-4" />
-            New POC
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Sign out</span>
           </button>
-        )}
+
+          {onNewProject && (
+            <button
+              onClick={onNewProject}
+              className="flex items-center gap-2 px-3 py-1.5 bg-[#7553ff] hover:bg-[#8c6fff] text-white text-sm rounded transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              New POC
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Project Grid */}

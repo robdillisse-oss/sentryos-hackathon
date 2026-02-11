@@ -5,10 +5,11 @@ import * as Sentry from '@sentry/nextjs'
 import { POCProject } from './types'
 import { calculatePOCStats, getProgressColor } from './utils'
 import { CompanyLogo } from './CompanyLogo'
+import { useAuth } from './auth'
 import { MutualActionPlan } from './MutualActionPlan'
 import { POCByPhase } from './POCByPhase'
 import { SuccessCriteria } from './SuccessCriteria'
-import { ArrowLeft, ListTodo, Layers, Target } from 'lucide-react'
+import { ArrowLeft, ListTodo, Layers, Target, LogOut, User } from 'lucide-react'
 
 type TabType = 'action-plan' | 'phases' | 'success-criteria'
 
@@ -19,6 +20,7 @@ interface POCProjectDetailProps {
 }
 
 export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetailProps) {
+  const { user, logout } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('action-plan')
 
   const handleToggleActionItem = (id: string) => {
@@ -108,6 +110,32 @@ export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetail
             <h1 className="text-lg font-semibold text-[#e8e4f0]">{project.customerName}</h1>
             <p className="text-sm text-[#9086a3]">{project.projectName}</p>
           </div>
+
+          {/* User Profile */}
+          {user && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1e1a2a] rounded-lg">
+              <div className="w-6 h-6 rounded-full bg-[#7553ff]/20 flex items-center justify-center overflow-hidden">
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-3.5 h-3.5 text-[#7553ff]" />
+                )}
+              </div>
+              <span className="text-sm text-[#e8e4f0]">{user.name}</span>
+            </div>
+          )}
+
+          {/* Logout Button */}
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 px-3 py-1.5 hover:bg-[#1e1a2a] text-[#9086a3] hover:text-[#e8e4f0] text-sm rounded transition-colors"
+            title="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+
+          <div className="h-4 w-px bg-[#362552]" />
+
           <div className="text-right">
             <div className="text-2xl font-bold text-[#e8e4f0]">{stats.overallCompletion}%</div>
             <div className={`text-xs ${stats.onTrack ? 'text-green-400' : 'text-red-400'}`}>
