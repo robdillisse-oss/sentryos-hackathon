@@ -7,6 +7,7 @@ import { DesktopIcon } from './DesktopIcon'
 import { Notepad } from './apps/Notepad'
 import { FolderView, FolderItem } from './apps/FolderView'
 import { Chat } from './apps/Chat'
+import { POCTracker } from './apps/poc-tracker'
 import { useState } from 'react'
 import * as Sentry from '@sentry/nextjs'
 
@@ -118,6 +119,25 @@ function DesktopContent() {
     })
   }
 
+  const openPOCTracker = () => {
+    Sentry.logger.info('User opened POC Tracker')
+    Sentry.metrics.count('desktop.icon_opened', 1, { attributes: { icon: 'poc_tracker' } })
+    openWindow({
+      id: 'poc-tracker',
+      title: 'POC Tracker',
+      icon: '📊',
+      x: 120,
+      y: 60,
+      width: 900,
+      height: 650,
+      minWidth: 700,
+      minHeight: 500,
+      isMinimized: false,
+      isMaximized: false,
+      content: <POCTracker />
+    })
+  }
+
   const handleDesktopClick = () => {
     setSelectedIcon(null)
   }
@@ -145,6 +165,14 @@ function DesktopContent() {
 
       {/* Desktop icons area - z-10 to ensure it's above windows container */}
       <div className="absolute top-4 left-4 flex flex-col gap-2 z-10" onClick={(e) => e.stopPropagation()}>
+        <DesktopIcon
+          id="poc-tracker"
+          label="POC Tracker"
+          icon="chart"
+          onDoubleClick={openPOCTracker}
+          selected={selectedIcon === 'poc-tracker'}
+          onSelect={() => setSelectedIcon('poc-tracker')}
+        />
         <DesktopIcon
           id="install-guide"
           label="Install Guide"
