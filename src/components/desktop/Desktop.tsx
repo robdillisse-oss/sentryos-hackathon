@@ -8,6 +8,7 @@ import { Notepad } from './apps/Notepad'
 import { FolderView, FolderItem } from './apps/FolderView'
 import { Chat } from './apps/Chat'
 import { useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 
 const INSTALL_GUIDE_CONTENT = `# SentryOS Install Guide
 
@@ -59,6 +60,8 @@ function DesktopContent() {
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null)
 
   const openInstallGuide = () => {
+    Sentry.logger.info('User opened Install Guide')
+    Sentry.metrics.count('desktop.icon_opened', 1, { attributes: { icon: 'install_guide' } })
     openWindow({
       id: 'install-guide',
       title: 'Install Guide.md',
@@ -76,6 +79,8 @@ function DesktopContent() {
   }
 
   const openChatWindow = () => {
+    Sentry.logger.info('User opened Chat window')
+    Sentry.metrics.count('desktop.icon_opened', 1, { attributes: { icon: 'chat' } })
     openWindow({
       id: 'chat',
       title: 'SentryOS Chat',
@@ -93,6 +98,8 @@ function DesktopContent() {
   }
 
   const openAgentsFolder = () => {
+    Sentry.logger.info('User opened Agents folder')
+    Sentry.metrics.count('desktop.icon_opened', 1, { attributes: { icon: 'agents_folder' } })
     const agentsFolderItems: FolderItem[] = []
 
     openWindow({
