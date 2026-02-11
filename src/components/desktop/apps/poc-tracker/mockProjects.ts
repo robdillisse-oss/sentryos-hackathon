@@ -228,6 +228,60 @@ function getFloHealthPOC(): POCProject {
         notes: ''
       }
     ],
+    timeline: [
+      {
+        id: 'fh-tl-1',
+        name: 'Initial Commercial Discussion',
+        category: 'commercial',
+        status: 'completed',
+        startDate: new Date('2026-01-15'),
+        targetDate: new Date('2026-01-20'),
+        completionDate: new Date('2026-01-18'),
+        owner: 'Sarah Johnson',
+        description: 'Pricing discussion and POC terms agreed',
+        notes: 'Budget approved by Anna'
+      },
+      {
+        id: 'fh-tl-2',
+        name: 'Security Questionnaire',
+        category: 'security',
+        status: 'in-progress',
+        startDate: new Date('2026-02-01'),
+        targetDate: new Date('2026-02-20'),
+        owner: 'Flo Security Team',
+        description: 'Complete vendor security assessment and compliance review'
+      },
+      {
+        id: 'fh-tl-3',
+        name: 'IT Security Vendor Onboarding',
+        category: 'security',
+        status: 'pending',
+        targetDate: new Date('2026-02-25'),
+        owner: 'Flo IT Security',
+        description: 'Whitelist Sentry domains, approve data processing agreement',
+        dependencies: ['fh-tl-2']
+      },
+      {
+        id: 'fh-tl-4',
+        name: 'MSA Negotiation',
+        category: 'legal',
+        status: 'pending',
+        targetDate: new Date('2026-03-01'),
+        owner: 'Flo Legal & Sentry Legal',
+        description: 'Master Service Agreement review and negotiation',
+        notes: 'Waiting on POC results before starting'
+      },
+      {
+        id: 'fh-tl-5',
+        name: 'Enterprise License Discussion',
+        category: 'commercial',
+        status: 'pending',
+        targetDate: new Date('2026-03-20'),
+        owner: 'Sarah Johnson',
+        description: 'Finalize pricing for production rollout based on POC success',
+        dependencies: ['fh-tl-4']
+      }
+    ],
     notes: 'Focus on mobile-first monitoring. High user volume (100M+ users).'
   }
 }
@@ -406,6 +460,73 @@ function getDOJOPOC(): POCProject {
         currentState: '',
         status: 'not-started',
         notes: ''
+      }
+    ],
+    timeline: [
+      {
+        id: 'dj-tl-1',
+        name: 'PCI Compliance Review',
+        category: 'security',
+        status: 'completed',
+        startDate: new Date('2026-01-05'),
+        targetDate: new Date('2026-01-25'),
+        completionDate: new Date('2026-01-22'),
+        owner: 'DOJO Security Team',
+        description: 'Review Sentry\'s PCI DSS compliance documentation and data handling practices'
+      },
+      {
+        id: 'dj-tl-2',
+        name: 'DPA & BAA Execution',
+        category: 'legal',
+        status: 'completed',
+        startDate: new Date('2026-01-20'),
+        targetDate: new Date('2026-02-05'),
+        completionDate: new Date('2026-02-03'),
+        owner: 'DOJO Legal',
+        description: 'Sign Data Processing Agreement and Business Associate Agreement',
+        notes: 'Required for handling payment data'
+      },
+      {
+        id: 'dj-tl-3',
+        name: 'Security Vendor Onboarding',
+        category: 'security',
+        status: 'in-progress',
+        startDate: new Date('2026-02-05'),
+        targetDate: new Date('2026-02-20'),
+        owner: 'DOJO InfoSec',
+        description: 'Complete vendor security assessment, penetration test review',
+        notes: 'Awaiting final sign-off from CISO'
+      },
+      {
+        id: 'dj-tl-4',
+        name: 'MSA Negotiation',
+        category: 'legal',
+        status: 'in-progress',
+        startDate: new Date('2026-02-01'),
+        targetDate: new Date('2026-03-01'),
+        owner: 'Tom Anderson & DOJO Legal',
+        description: 'Negotiate terms for Master Service Agreement',
+        notes: 'Discussing liability caps and SLA commitments'
+      },
+      {
+        id: 'dj-tl-5',
+        name: 'Enterprise Pricing Finalization',
+        category: 'commercial',
+        status: 'pending',
+        targetDate: new Date('2026-03-15'),
+        owner: 'Tom Anderson',
+        description: 'Finalize volume-based pricing for production deployment',
+        dependencies: ['dj-tl-4']
+      },
+      {
+        id: 'dj-tl-6',
+        name: 'Production Environment Setup',
+        category: 'technical',
+        status: 'pending',
+        targetDate: new Date('2026-03-20'),
+        owner: 'DOJO DevOps',
+        description: 'Configure production Sentry organization, set up SSO',
+        dependencies: ['dj-tl-3', 'dj-tl-4']
       }
     ],
     notes: 'Critical focus on PCI compliance and data privacy. Payment processing SLA: 99.95%'
@@ -613,6 +734,80 @@ function getBitvavoPOC(): POCProject {
         currentState: '',
         status: 'not-started',
         notes: ''
+      }
+    ],
+    timeline: [
+      {
+        id: 'bv-tl-1',
+        name: 'Enterprise RFP Response',
+        category: 'commercial',
+        status: 'completed',
+        startDate: new Date('2026-01-10'),
+        targetDate: new Date('2026-01-30'),
+        completionDate: new Date('2026-01-28'),
+        owner: 'Laura Martinez',
+        description: 'Respond to Request for Proposal with technical and commercial details'
+      },
+      {
+        id: 'bv-tl-2',
+        name: 'Financial Services Compliance Review',
+        category: 'security',
+        status: 'in-progress',
+        startDate: new Date('2026-02-01'),
+        targetDate: new Date('2026-03-01'),
+        owner: 'Bitvavo Compliance Team',
+        description: 'Review Sentry compliance with EU financial regulations (MiFID II, PSD2)',
+        notes: 'AFM requirements for Dutch financial institutions'
+      },
+      {
+        id: 'bv-tl-3',
+        name: 'Security Audit Review',
+        category: 'security',
+        status: 'pending',
+        targetDate: new Date('2026-03-10'),
+        owner: 'Bitvavo CISO',
+        description: 'Review Sentry SOC2, ISO27001, and penetration test results',
+        dependencies: ['bv-tl-2']
+      },
+      {
+        id: 'bv-tl-4',
+        name: 'GDPR Data Processing Agreement',
+        category: 'legal',
+        status: 'pending',
+        targetDate: new Date('2026-03-15'),
+        owner: 'Bitvavo Legal',
+        description: 'Negotiate and sign EU GDPR-compliant Data Processing Agreement',
+        notes: 'Dutch law jurisdiction required'
+      },
+      {
+        id: 'bv-tl-5',
+        name: 'Enterprise MSA Negotiation',
+        category: 'legal',
+        status: 'pending',
+        targetDate: new Date('2026-04-01'),
+        owner: 'Laura Martinez & Bitvavo Legal',
+        description: 'Negotiate multi-year Master Service Agreement',
+        dependencies: ['bv-tl-4']
+      },
+      {
+        id: 'bv-tl-6',
+        name: 'Volume-Based Pricing Agreement',
+        category: 'commercial',
+        status: 'pending',
+        targetDate: new Date('2026-04-10'),
+        owner: 'Laura Martinez',
+        description: 'Finalize enterprise pricing for 100M+ events/month',
+        dependencies: ['bv-tl-5']
+      },
+      {
+        id: 'bv-tl-7',
+        name: 'Production Infrastructure Setup',
+        category: 'technical',
+        status: 'pending',
+        targetDate: new Date('2026-04-20'),
+        owner: 'Bitvavo DevOps',
+        description: 'Set up dedicated Sentry organization with SSO and IP whitelisting',
+        dependencies: ['bv-tl-3', 'bv-tl-5']
       }
     ],
     notes: 'Enterprise deal. Focus on high-volume, low-latency requirements. Peak: 100K+ tx/sec'

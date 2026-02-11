@@ -11,6 +11,7 @@ import { useNotifications } from './notifications'
 import { MutualActionPlan } from './MutualActionPlan'
 import { POCByPhase } from './POCByPhase'
 import { SuccessCriteria } from './SuccessCriteria'
+import { BusinessTimeline } from './BusinessTimeline'
 import { ArrowLeft, ListTodo, Layers, Target, LogOut, User } from 'lucide-react'
 
 type TabType = 'action-plan' | 'phases' | 'success-criteria'
@@ -257,6 +258,62 @@ export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetail
     onUpdate(updatedProject)
   }
 
+  const handleToggleTimelineItem = (id: string) => {
+    const item = project.timeline.find(i => i.id === id)
+    if (!item) return
+
+    const updatedProject = {
+      ...project,
+      timeline: project.timeline.map(item => {
+        if (item.id === id) {
+          let newStatus: typeof item.status
+
+          // Cycle through statuses: pending -> in-progress -> completed -> pending
+          if (item.status === 'pending') {
+            newStatus = 'in-progress'
+          } else if (item.status === 'in-progress') {
+            newStatus = 'completed'
+          } else {
+            newStatus = 'pending'
+          }
+
+          Sentry.logger.info('Timeline item status changed', {
+            item_id: id,
+            item_name: item.name,
+            old_status: item.status,
+            new_status: newStatus
+          })
+          Sentry.metrics.count('poc_tracker.timeline_item_toggled', 1, {
+            attributes: { status: newStatus, category: item.category }
+          })
+
+          return {
+            ...item,
+            status: newStatus,
+            completionDate: newStatus === 'completed' ? new Date() : undefined
+          }
+        }
+        return item
+      })
+    }
+
+    // Create notification for completed timeline items
+    if (item.status !== 'completed') {
+      const newItem = updatedProject.timeline.find(i => i.id === id)
+      if (newItem?.status === 'completed') {
+        addNotification({
+          type: item.category === 'legal' || item.category === 'commercial' ? 'milestone' : 'success',
+          title: '✓ Timeline Milestone Complete',
+          message: `"${item.name}" has been completed`,
+          projectId: project.id,
+          projectName: project.customerName
+        })
+      }
+    }
+
+    onUpdate(updatedProject)
+  }
+
   const stats = calculatePOCStats(project)
 
   return (
@@ -416,24 +473,36 @@ export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetail
 
       {/* Tab Content */}
       <div className="flex-1 overflow-auto">
-        {activeTab === 'action-plan' && (
-          <MutualActionPlan
-            items={project.actionPlan}
-            onToggleStatus={handleToggleActionItem}
-          />
-        )}
-        {activeTab === 'phases' && (
-          <POCByPhase
-            phases={project.phases}
-            onToggleTask={handleTogglePhaseTask}
-          />
-        )}
-        {activeTab === 'success-criteria' && (
-          <SuccessCriteria
-            criteria={project.successCriteria}
-            onToggleStatus={handleToggleCriterion}
-          />
-        )}
+        <div className="min-h-full flex flex-col">
+          <div className="flex-shrink-0">
+            {activeTab === 'action-plan' && (
+              <MutualActionPlan
+                items={project.actionPlan}
+                onToggleStatus={handleToggleActionItem}
+              />
+            )}
+            {activeTab === 'phases' && (
+              <POCByPhase
+                phases={project.phases}
+                onToggleTask={handleTogglePhaseTask}
+              />
+            )}
+            {activeTab === 'success-criteria' && (
+              <SuccessCriteria
+                criteria={project.successCriteria}
+                onToggleStatus={handleToggleCriterion}
+              />
+            )}
+          </div>
+
+          {/* Business Timeline - Always visible below tabs */}
+          <div className="flex-shrink-0">
+            <BusinessTimeline
+              items={project.timeline}
+              onToggleStatus={handleToggleTimelineItem}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -37,6 +37,21 @@ export interface SuccessCriterion {
   notes: string
 }
 
+// Business Timeline types
+export interface TimelineItem {
+  id: string
+  name: string
+  category: 'legal' | 'commercial' | 'security' | 'onboarding' | 'technical'
+  status: 'completed' | 'in-progress' | 'pending' | 'blocked'
+  startDate?: Date
+  targetDate?: Date
+  completionDate?: Date
+  owner: string
+  description: string
+  dependencies?: string[]
+  notes?: string
+}
+
 // Main POC Project
 export interface POCProject {
   id: string
@@ -53,6 +68,7 @@ export interface POCProject {
   actionPlan: ActionPlanItem[]
   phases: Phase[]
   successCriteria: SuccessCriterion[]
+  timeline: TimelineItem[]
   notes?: string
 }
 

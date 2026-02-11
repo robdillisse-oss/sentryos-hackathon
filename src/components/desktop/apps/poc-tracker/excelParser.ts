@@ -286,6 +286,70 @@ export function parseCatawikiExcel(): POCProject {
     actionPlan,
     phases,
     successCriteria,
+    timeline: [
+      {
+        id: 'cw-tl-1',
+        name: 'Initial Commercial Discussion',
+        category: 'commercial',
+        status: 'completed',
+        startDate: new Date('2026-01-20'),
+        targetDate: new Date('2026-02-01'),
+        completionDate: new Date('2026-01-30'),
+        owner: 'Rob Dillisse',
+        description: 'Initial pricing discussion and POC scope agreement',
+        notes: 'Hazid joined for strategic alignment'
+      },
+      {
+        id: 'cw-tl-2',
+        name: 'Security Assessment',
+        category: 'security',
+        status: 'in-progress',
+        startDate: new Date('2026-02-05'),
+        targetDate: new Date('2026-02-28'),
+        owner: 'Catawiki Security Team',
+        description: 'Complete vendor security questionnaire and SOC2 review'
+      },
+      {
+        id: 'cw-tl-3',
+        name: 'IT Vendor Onboarding',
+        category: 'onboarding',
+        status: 'pending',
+        targetDate: new Date('2026-03-10'),
+        owner: 'Catawiki IT',
+        description: 'Whitelist Sentry domains, configure network access',
+        dependencies: ['cw-tl-2']
+      },
+      {
+        id: 'cw-tl-4',
+        name: 'GDPR DPA Review',
+        category: 'legal',
+        status: 'pending',
+        targetDate: new Date('2026-03-15'),
+        owner: 'Catawiki Legal',
+        description: 'Review and sign Data Processing Agreement for EU GDPR compliance',
+        notes: 'Netherlands-based, EU data residency required'
+      },
+      {
+        id: 'cw-tl-5',
+        name: 'MSA Negotiation',
+        category: 'legal',
+        status: 'pending',
+        targetDate: new Date('2026-04-01'),
+        owner: 'Rob Dillisse & Catawiki Legal',
+        description: 'Negotiate Master Service Agreement terms',
+        dependencies: ['cw-tl-4']
+      },
+      {
+        id: 'cw-tl-6',
+        name: 'Enterprise License Finalization',
+        category: 'commercial',
+        status: 'pending',
+        targetDate: new Date('2026-04-15'),
+        owner: 'Hazid Mangroe',
+        description: 'Finalize multi-year enterprise license based on POC results',
+        dependencies: ['cw-tl-5']
+      }
+    ],
     notes: 'High priority enterprise customer. Focus on error monitoring, performance, and hydration errors for Next.js'
   }
 }
