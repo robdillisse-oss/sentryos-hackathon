@@ -98,6 +98,18 @@ export function POCProjectDetail({ project, onBack, onUpdate }: POCProjectDetail
             Back to Projects
           </button>
           <div className="h-4 w-px bg-[#362552]" />
+          {project.logoUrl && (
+            <>
+              <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center overflow-hidden">
+                <img
+                  src={project.logoUrl}
+                  alt={`${project.customerName} logo`}
+                  className="w-full h-full object-contain p-1"
+                />
+              </div>
+              <div className="h-4 w-px bg-[#362552]" />
+            </>
+          )}
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-[#e8e4f0]">{project.customerName}</h1>
             <p className="text-sm text-[#9086a3]">{project.projectName}</p>

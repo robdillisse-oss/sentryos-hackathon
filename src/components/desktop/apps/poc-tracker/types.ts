@@ -42,6 +42,7 @@ export interface POCProject {
   id: string
   customerName: string
   projectName: string
+  logoUrl?: string
   startDate: Date
   targetCompletionDate: Date
   sentryContact: string

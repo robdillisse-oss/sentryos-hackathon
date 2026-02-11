@@ -23,18 +23,29 @@ export function POCProjectCard({ project, onClick }: POCProjectCardProps) {
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-lg font-semibold text-[#e8e4f0] group-hover:text-[#7553ff] transition-colors">
-              {project.customerName}
-            </h3>
-            <span className={`text-xs px-2 py-0.5 rounded ${getProjectStatusColor(project.status)} text-white`}>
-              {project.status}
-            </span>
+        <div className="flex items-start gap-3 flex-1">
+          {project.logoUrl && (
+            <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <img
+                src={project.logoUrl}
+                alt={`${project.customerName} logo`}
+                className="w-full h-full object-contain p-1"
+              />
+            </div>
+          )}
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-lg font-semibold text-[#e8e4f0] group-hover:text-[#7553ff] transition-colors">
+                {project.customerName}
+              </h3>
+              <span className={`text-xs px-2 py-0.5 rounded ${getProjectStatusColor(project.status)} text-white`}>
+                {project.status}
+              </span>
+            </div>
+            <p className="text-sm text-[#9086a3]">{project.projectName}</p>
           </div>
-          <p className="text-sm text-[#9086a3]">{project.projectName}</p>
         </div>
-        <ArrowRight className="w-5 h-5 text-[#9086a3] group-hover:text-[#7553ff] group-hover:translate-x-1 transition-all" />
+        <ArrowRight className="w-5 h-5 text-[#9086a3] group-hover:text-[#7553ff] group-hover:translate-x-1 transition-all flex-shrink-0" />
       </div>
 
       {/* Progress Bar */}

@@ -266,6 +266,7 @@ export function parseCatawikiExcel(): POCProject {
     id: 'catawiki-poc',
     customerName: 'Catawiki',
     projectName: 'FE/Mobile/Be Error & Performance monitoring',
+    logoUrl: 'https://logo.clearbit.com/catawiki.com',
     startDate: new Date('2026-02-11'),
     targetCompletionDate: new Date('2026-03-31'),
     sentryContact: 'Rob Dillisse',

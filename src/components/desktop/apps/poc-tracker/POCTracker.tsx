@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/nextjs'
 import { POCProject } from './types'
 import { POCProjectList } from './POCProjectList'
 import { POCProjectDetail } from './POCProjectDetail'
-import { parseCatawikiExcel } from './excelParser'
+import { getAllMockProjects } from './mockProjects'
 
 export function POCTracker() {
   const [projects, setProjects] = useState<POCProject[]>([])
@@ -16,11 +16,8 @@ export function POCTracker() {
     Sentry.logger.info('POC Tracker loaded')
     Sentry.metrics.count('poc_tracker.page_load', 1)
 
-    // Load Catawiki POC as a sample project
-    const catawikiPOC = parseCatawikiExcel()
-
-    // You could also create more sample projects here
-    const allProjects = [catawikiPOC]
+    // Load all mock POC projects
+    const allProjects = getAllMockProjects()
 
     setProjects(allProjects)
 
