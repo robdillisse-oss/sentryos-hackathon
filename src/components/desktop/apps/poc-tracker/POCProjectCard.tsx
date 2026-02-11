@@ -2,6 +2,7 @@
 
 import { POCProject } from './types'
 import { calculatePOCStats, getProjectStatusColor, getProgressColor } from './utils'
+import { CompanyLogo } from './CompanyLogo'
 import { ArrowRight, Calendar, Users, CheckCircle, AlertTriangle } from 'lucide-react'
 
 interface POCProjectCardProps {
@@ -24,15 +25,11 @@ export function POCProjectCard({ project, onClick }: POCProjectCardProps) {
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start gap-3 flex-1">
-          {project.logoUrl && (
-            <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
-              <img
-                src={project.logoUrl}
-                alt={`${project.customerName} logo`}
-                className="w-full h-full object-contain p-1"
-              />
-            </div>
-          )}
+          <CompanyLogo
+            companyName={project.customerName}
+            size="medium"
+            className="flex-shrink-0"
+          />
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-lg font-semibold text-[#e8e4f0] group-hover:text-[#7553ff] transition-colors">
